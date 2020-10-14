@@ -1,33 +1,45 @@
 const express = require('express')
-const fs = require('fs')
+
+const { User } = require('../db')
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  fs.readFile('./data/users.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file users.json"})
-    } else {
-      res.send(JSON.parse(data))
-    }
-  })
+  User.findAll()
+    .then(users => {
+      res.send(users)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Users table",
+        error,
+      })
+    })
 })
 
 router.get('/:userId', (req, res) => {
   const searchedUserId = req.params.userId
-  fs.readFile('./data/users.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file users.json"})
-    } else {
-      const allUsers = JSON.parse(data)
-      const searchedUser = allUsers.find(user => user._id === searchedUserId)
-      if (searchedUser) {
-        res.send(searchedUser)
-      } else {
-        res.status(404).send({err: `Couldn't find user with ID = ${ searchedUserId }`})
-      }
+  
+  User.findOne({
+    where: {
+      id: searchedUserId
     }
   })
+    .then(user => {
+      if (user) {
+        res.send(user)
+      } else {
+        res.status(404).send({
+          message: `Couldn't find user with ID = ${ searchedUserId }`
+        })
+      }
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Users table",
+        error,
+      })
+    })
 })
 
 module.exports = router

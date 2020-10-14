@@ -1,58 +1,74 @@
 const express = require('express')
-const fs = require('fs')
+
+const { Contact } = require('../db')
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  fs.readFile('./data/contacts.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file contacts.json"})
-    } else {
-      res.send(JSON.parse(data))
+  Contact.findAll()
+    .then(contacts => {
+      res.send(contacts)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Contacts table",
+        error,
+      })
+    })
+})
+
+router.get('/:ownerUserId', (req, res) => {
+  const ownerUserId = req.params.ownerUserId
+
+  Contact.findAll({
+    where: {
+      owner: ownerUserId
     }
   })
+    .then(contacts => {
+      res.send(contacts)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Contacts table",
+        error,
+      })
+    })
 })
 
 router.post('/', (req, res) => {
-  const newContactUserId = req.body.userId
+  const { owner, contact } = req.body
 
-  fs.readFile('./data/contacts.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file contacts.json"})
-    } else {
-      const oldContactUserIds = JSON.parse(data)
-      const newContactUserIds = [ ...oldContactUserIds, newContactUserId ]
-      
-      fs.writeFile('./data/contacts.json', JSON.stringify(newContactUserIds, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file contacts.json"})
-        } else {
-          res.send(newContactUserIds)
-        }
+  Contact.create({ owner, contact })
+    .then(newContact => {
+      res.send(newContact)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error writing Contacts table",
+        error,
       })
-    }
-  })
+    })
 })
 
-router.delete('/', (req, res) => {
-  const removeContactUserId = req.body.userId
+router.delete('/:owerUserId/:contactUserId', (req, res) => {
+  const { ownerUserId, contactUserId } = req.params
 
-  fs.readFile('./data/contacts.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file contacts.json"})
-    } else {
-      const oldContactUserIds = JSON.parse(data)
-      const newContactUserIds = oldContactUserIds.filter(userId => userId !== removeContactUserId)
-      
-      fs.writeFile('./data/contacts.json', JSON.stringify(newContactUserIds, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file contacts.json"})
-        } else {
-          res.send(newContactUserIds)
-        }
-      })
+  Contact.destroy({
+    where: {
+      owner: ownerUserId,
+      contact: contactUserId
     }
   })
+    .then(() => {
+      res.end()
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error writing Contacts table",
+        error,
+      })
+    })
 })
 
 module.exports = router

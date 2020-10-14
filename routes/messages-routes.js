@@ -1,65 +1,77 @@
 const express = require('express')
-const fs = require('fs')
-const uuid = require('uuid')
+
+const { Message } = require('../db')
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  fs.readFile('./data/messages.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file messages.json"})
-    } else {
-      res.send(JSON.parse(data))
+  Message.findAll()
+    .then(messages => {
+      res.send(messages)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Messages table",
+        error,
+      })
+    })
+})
+
+router.get('/:messageId', (req, res) => {
+  const searchedMessageId = req.params.messageId
+  
+  Message.findOne({
+    where: {
+      id: searchedMessageId
     }
   })
+    .then(message => {
+      if (message) {
+        res.send(message)
+      } else {
+        res.status(404).send({
+          message: `Couldn't find message with ID = ${ searchedMessageId }`
+        })
+      }
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Messages table",
+        error,
+      })
+    })
 })
 
 router.post('/', (req, res) => {
-  fs.readFile('./data/messages.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file messages.json"})
-    } else {
-      const { from, to, text } = req.body
-      const newMessage = {
-        _id: uuid.v4(),
-        from,
-        to,
-        text,
-        date: new Date(),
-      }
-      const oldMessages = JSON.parse(data)
-      const newMessages = [ ...oldMessages, newMessage ]
-
-      fs.writeFile('./data/messages.json', JSON.stringify(newMessages, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file messages.json"})
-        } else {
-          res.send(newMessages)
-        }
+  Message.create(req.body)
+    .then(newMessage => {
+      res.send(newMessage)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error writing Messages table",
+        error,
       })
-    }
-  })
+    })
 })
 
 router.delete('/:messageId', (req, res) => {
   const messageIdToDelete = req.params.messageId
 
-  fs.readFile('./data/messages.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file messages.json"})
-    } else {
-      const oldMessages = JSON.parse(data)
-      const newMessages = oldMessages.filter(message => message._id !== messageIdToDelete)
-      
-      fs.writeFile('./data/messages.json', JSON.stringify(newMessages, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file messages.json"})
-        } else {
-          res.send(newMessages)
-        }
-      })
+  Message.destroy({
+    where: {
+      id: messageIdToDelete
     }
   })
+    .then(() => {
+      res.end()
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error writing Messages table",
+        error,
+      })
+    })
 })
 
 module.exports = router

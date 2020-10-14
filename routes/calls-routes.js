@@ -1,69 +1,79 @@
 const express = require('express')
-const fs = require('fs')
-const uuid = require('uuid')
+const { Op } = require('sequelize')
+
+const { Call } = require('../db')
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
-  fs.readFile('./data/calls.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file calls.json"})
-    } else {
-      res.send(JSON.parse(data))
+  Call.findAll()
+    .then(calls => {
+      res.send(calls)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Calls table",
+        error,
+      })
+    })
+})
+
+// TODO: should move to /user/:userId/calls
+router.get('/:forUserId', (req, res) => {
+  const forUserId = req.params.forUserId
+
+  Call.findAll({
+    where: {
+      [Op.or]: [
+        { from: forUserId },
+        { to: forUserId },
+      ]
     }
   })
+    .then(callsForUser => {
+      res.send(callsForUser)
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error reading Calls table",
+        error,
+      })
+    })
 })
 
 router.post('/', (req, res) => {
-  fs.readFile('./data/calls.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file calls.json"})
-    } else {
-      const { from, to, duration_ms, missed } = req.body
-      const newCall = {
-        _id: uuid.v4(),
-        date: new Date(),
-        from,
-        to,
-        duration_ms,
-        missed,
-      }
-      const oldCalls = JSON.parse(data).map(c => ({
-        _id: uuid.v4(),
-        ...c,
-      }))
-      const newCalls = [ ...oldCalls, newCall ]
+  const { from, to, duration_ms, missed } = req.body
 
-      fs.writeFile('./data/calls.json', JSON.stringify(newCalls, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file calls.json"})
-        } else {
-          res.send(newCalls)
-        }
+  Call.create({ from, to, duration_ms, missed })
+    .then((newCall) => {
+      res.send(newCall)
+    })
+    .catch(error => {
+      console.error(error)
+      res.status(500).send({
+        message: "Error writing Calls table",
+        error,
       })
-    }
-  })
+    })
 })
 
 router.delete('/:callId', (req, res) => {
   const callIdToDelete = req.params.callId
 
-  fs.readFile('./data/calls.json', (err, data) => {
-    if (err) {
-      res.status(500).send({err: "Error reading file calls.json"})
-    } else {
-      const oldCalls = JSON.parse(data)
-      const newCalls = oldCalls.filter(call => call._id !== callIdToDelete)
-      
-      fs.writeFile('./data/calls.json', JSON.stringify(newCalls, null, '  '), (err, data) => {
-        if (err) {
-          res.status(500).send({err: "Error writing file calls.json"})
-        } else {
-          res.send(newCalls)
-        }
-      })
+  Call.destroy({
+    where: {
+      id: callIdToDelete,
     }
   })
+    .then(() => {
+      res.end()
+    })
+    .catch(error => {
+      res.status(500).send({
+        message: "Error writing Calls table",
+        error,
+      })
+    })
 })
 
 module.exports = router
