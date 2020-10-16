@@ -1,6 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
-const sequelize = new Sequelize('sqlite:memory:')
+const sequelize = new Sequelize('postgres://postgres:password@localhost:5432/whatsapp')
 
 const User = sequelize.define('User', {
   id: {
@@ -80,7 +80,7 @@ const Call = sequelize.define('Call', {
     notNull: true,
   },
   duration_ms: {
-    type: DataTypes.NUMBER,
+    type: DataTypes.INTEGER,
     notNull: true,
     validate: {
       min: 0,

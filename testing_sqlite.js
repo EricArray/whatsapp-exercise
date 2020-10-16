@@ -1,6 +1,11 @@
 const { DataTypes, Sequelize, Op } = require('sequelize')
 
-const sequelize = new Sequelize('sqlite:memory:')
+let sequelize
+try {
+  sequelize = new Sequelize('postgres://postgres:password@localhost:5432/whatsapp')
+} catch (error) {
+  console.error(error)
+}
 
 const User = sequelize.define('User', {
   id: {
@@ -16,7 +21,7 @@ const User = sequelize.define('User', {
 
 const Color = sequelize.define('Color', {
   id: {
-    type: DataTypes.NUMBER,
+    type: DataTypes.INTEGER,
     primaryKey: true,
   },
   name: {

@@ -1,0 +1,34 @@
+# download the postgres image
+docker pull postgres:alpine
+
+# create the docker container
+docker run --name postgres-whatsapp -e POSTGRES_PASSWORD=password -d -p 5432:5432 postgres:alpine
+
+# enter the docker container
+docker exec -it postgres-whatsapp sh
+
+# open postgres command line
+psql -U postgres
+
+# create a new database
+CREATE DATABASE whatsapp;
+
+# connect to the database to use SQL from command line
+\c whatsapp
+
+# get table info
+\d+ "Table"
+
+# start the server
+nodemon src
+
+
+# stop and restart the container
+docker stop postgres-whatsapp
+docker start postgres-whatsapp
+
+# container log
+docker logs -f postgres-whatsapp
+
+# connect from command line (the password is 'password')
+psql -h localhost -p 5432 -U postgress

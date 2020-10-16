@@ -51,7 +51,7 @@ router.post('/', (req, res) => {
     })
 })
 
-router.delete('/:owerUserId/:contactUserId', (req, res) => {
+router.delete('/:ownerUserId/:contactUserId', (req, res) => {
   const { ownerUserId, contactUserId } = req.params
 
   Contact.destroy({
